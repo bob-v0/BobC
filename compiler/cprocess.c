@@ -29,3 +29,32 @@ struct compile_process *compile_process_create(const char *filename_in, const ch
 
     return process;
 }
+
+char compile_process_next_char(struct lex_process *lex_process)
+{
+    struct compile_process *compiler = lex_process->compiler;
+    compiler->pos.col += 1;
+    char c = getc(compiler->file_c.fp);
+
+    if ('\n' == c)
+    {
+        compiler->pos.line +=1;
+        compiler->pos.col = 1;
+    }
+
+    return c;
+}
+
+char compile_process_peek_char(struct lex_process *lex_process)
+{
+    struct compile_process *compiler = lex_process->compiler;
+    char c = getc(compiler->file_c.fp);
+    ungetc(c, compiler->file_c.fp);
+    return c;
+}
+
+void compile_process_push_char(struct lex_process *lex_process, char c)
+{
+    struct compile_process *compiler = lex_process->compiler;
+    ungetc(c, compiler->file_c.fp);
+}
