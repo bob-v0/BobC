@@ -1,7 +1,8 @@
-#include <string.h>
 #include "compiler.h"
 #include "helpers/vector.h"
 #include "helpers/buffer.h"
+#include <string.h>
+#include <assert.h>
 
 #define LEX_GETC_IF(buffer, c, exp)     \
     for (c = peekc(); exp; c = peekc()) \
@@ -10,9 +11,7 @@
         nextc();                        \
     }
 
-
 struct token *read_next_token();
-
 
 static struct lex_process *lex_process;
 
@@ -97,24 +96,48 @@ struct token *token_make_number()
     return token_make_number_for_value(read_number());
 }
 
+static struct token *token_make_string(char start_delimiter, char end_delimiter)
+{
+    struct buffer *buf = buffer_create();
+    assert(nextc() == start_delimiter);
+
+    char c = nextc();
+    for (; c != end_delimiter && c != EOF; c = nextc())
+    {
+        if ('\\' == c)
+        {
+            // we need to handle escape character(s)
+            continue; // ignore for now
+        }
+
+        buffer_write(buf, c);
+    }
+
+    buffer_write(buf, 0x00);
+    return token_create(&(struct token){.type = TOKEN_TYPE_STRING, .sval = buffer_ptr(buf)});
+}
+
 struct token *read_next_token()
 {
     struct token *token = NULL;
     char c = peekc();
     switch (c)
     {
-        NUMERIC_CASE:
-            token = token_make_number();
-            break;
-        case ' ':
-        case '\t':
-            token = handle_whitespace();
-            break;
-        case EOF:
-            break;
+    NUMERIC_CASE:
+        token = token_make_number();
+        break;
+    case '"':
+        token = token_make_string('"', '"');
+        break;
+    case ' ':
+    case '\t':
+        token = handle_whitespace();
+        break;
+    case EOF:
+        break;
 
-        default:
-            compiler_error(lex_process->compiler, "Unexpected token, '%c'", c);
+    default:
+        compiler_error(lex_process->compiler, "Unexpected token, '%c'", c);
     }
 
     return token;
