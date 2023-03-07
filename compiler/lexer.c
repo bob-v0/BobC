@@ -356,10 +356,82 @@ struct token *read_special_token()
     return NULL;
 }
 
+struct token *token_make_newline()
+{
+    nextc();
+    return token_create(&(struct token){.type=TOKEN_TYPE_NEWLINE});
+}
+
+struct token *token_make_oneline_comment()
+{
+    struct buffer *buffer = buffer_create();
+    char c = 0;
+    LEX_GETC_IF(buffer, c, c != '\n' && c != EOF);
+    return token_create(&(struct token){.type=TOKEN_TYPE_COMMENT,.sval=buffer_ptr(buffer)});
+}
+
+struct token *token_make_multine_comment()
+{
+    struct buffer *buffer = buffer_create();
+    char c = 0;
+    while(1)
+    {
+        LEX_GETC_IF(buffer, c, c != '*' && c != EOF);
+        if(c == EOF)
+        {
+            compiler_error(lex_process->compiler, "Not closed comment!\n");
+        } 
+        else if (c == '*')
+        {// skip the *
+            nextc();
+
+            if(peekc() == '/')
+            {
+                nextc();
+                break;
+            }
+        }
+    }
+
+    return token_create(&(struct token){.type=TOKEN_TYPE_COMMENT,.sval=buffer_ptr(buffer)});
+}
+
+struct token *handle_comment()
+{
+    char c = peekc();
+    if (c == '/')
+    {
+        nextc();
+        if (peekc() == '/')
+        {
+            nextc();
+            return token_make_oneline_comment();
+        } else if(peekc() == '*')
+        {
+            nextc();
+            return token_make_multine_comment();
+        }
+
+        // not part of a comment, is a division operator instead
+        pushc('/');
+        return token_make_operator_or_string();
+    }
+
+    return NULL;
+}
+
 struct token *read_next_token()
 {
     struct token *token = NULL;
     char c = peekc();
+
+    token = handle_comment();
+
+    if(token)
+    {
+        return token;
+    }
+
     switch (c)
     {
     NUMERIC_CASE:
@@ -377,6 +449,9 @@ struct token *read_next_token()
     case ' ':
     case '\t':
         token = handle_whitespace();
+        break;
+    case '\n':
+        token = token_make_newline();
         break;
     case EOF:
         break;
