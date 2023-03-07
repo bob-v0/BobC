@@ -7,6 +7,7 @@ int main(int argc, char* argv[])
     printf("BobC C Compiler, v0.0.1.\n");
     printf("\n");
 
+    /*
     if(argc <= 1)
     {
         printf("Error:\n");
@@ -14,9 +15,11 @@ int main(int argc, char* argv[])
         printf("%s <filename.c>\n", argv[0]);
         return 0;
     }
+    */
 
 
-    int res = compile_file(argv[1], "./test", 0);
+    //int res = compile_file(argv[1], "./test", 0);
+    int res = compile_file("test.c", "./test", 0);
 
     if (COMPILER_FILE_COMPILED_OK == res)
     {
