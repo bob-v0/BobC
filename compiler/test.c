@@ -1,6 +1,8 @@
 #include<stdio.h>
 
-// main method
+/***
+ * Main method 
+ */ 
 int main(int argc, char* argv[])
 {
     // do some math
